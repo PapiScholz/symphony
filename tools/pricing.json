@@ -1,0 +1,95 @@
+{
+  "_comment": "Prices in USD per million tokens. Verify against the source URLs before trusting a cost report. cache_write is the 5-minute-TTL write price (1.25x base input); the 1-hour-TTL write price (2x base input) is given separately as cache_write_1h where available. cache_read is the cache-hit price (0.1x base input) regardless of TTL.",
+  "_sources": [
+    "https://platform.claude.com/docs/en/about-claude/pricing",
+    "https://claude.com/pricing",
+    "https://x.com/claudeai/status/2086891169217122586"
+  ],
+  "_retrieved": "2026-08-19",
+  "_disclaimer": "Prices change. Update this file and re-run the report; the tool prints which pricing date it used.",
+  "_notes": {
+    "long_context_1m": "Claude 4.6-and-later models (Fable 5, Mythos 5, Opus 5, Opus 4.8/4.7/4.6, Sonnet 5, Sonnet 4.6) include the full 1M-token context window at standard per-token pricing -- no long-context premium tier. Earlier models are not covered by this file.",
+    "sonnet_5_pricing_history": "Sonnet 5 launched at $2/$10 per MTok as introductory pricing through 2026-08-31, with a planned increase to $3/$15 on 2026-09-01. Anthropic canceled that increase on 2026-08-10 and made $2/$10 the permanent standard price -- confirmed both by the official docs page and by an official Anthropic (@claudeai) post on X.",
+    "cross_check": "platform.claude.com/docs/en/about-claude/pricing (canonical docs, most detailed table) and the official Anthropic X post agree on Sonnet 5 pricing. claude.com/pricing is client-side rendered, so its API pricing table could not be independently scraped via WebFetch to diff line-by-line -- the docs page states it mirrors claude.com/pricing#api and no contradicting figure was found anywhere else (including web search results citing the same numbers). No disagreement was found between sources for any model in this file.",
+    "fast_mode": "Claude Opus 5 and Opus 4.8 support a separate 'fast mode' (research preview, Claude API only) priced at $10 input / $50 output per MTok -- not included as a distinct model entry here since it's a request-time flag, not a separate model ID.",
+    "batch_api": "All models get a 50% discount on both input and output tokens via the Batch API -- not encoded here since it's a separate request mode, not a per-token list price."
+  },
+  "models": {
+    "claude-fable-5": {
+      "alias": "fable",
+      "input": 10.0,
+      "output": 50.0,
+      "cache_write": 12.5,
+      "cache_write_1h": 20.0,
+      "cache_read": 1.0
+    },
+    "claude-mythos-5": {
+      "alias": "mythos",
+      "input": 10.0,
+      "output": 50.0,
+      "cache_write": 12.5,
+      "cache_write_1h": 20.0,
+      "cache_read": 1.0,
+      "note": "Limited availability (Project Glasswing / anthropic.com/glasswing). Same pricing as Claude Fable 5."
+    },
+    "claude-opus-5": {
+      "alias": "opus",
+      "input": 5.0,
+      "output": 25.0,
+      "cache_write": 6.25,
+      "cache_write_1h": 10.0,
+      "cache_read": 0.5
+    },
+    "claude-sonnet-5": {
+      "alias": "sonnet",
+      "input": 2.0,
+      "output": 10.0,
+      "cache_write": 2.5,
+      "cache_write_1h": 4.0,
+      "cache_read": 0.2,
+      "note": "$2/$10 was introductory pricing through 2026-08-31; Anthropic made it permanent on 2026-08-10 and canceled the planned $3/$15 increase."
+    },
+    "claude-haiku-4-5": {
+      "alias": "haiku",
+      "input": 1.0,
+      "output": 5.0,
+      "cache_write": 1.25,
+      "cache_write_1h": 2.0,
+      "cache_read": 0.1
+    },
+    "claude-opus-4-8": {
+      "alias": null,
+      "input": 5.0,
+      "output": 25.0,
+      "cache_write": 6.25,
+      "cache_write_1h": 10.0,
+      "cache_read": 0.5,
+      "generation": "previous"
+    },
+    "claude-opus-4-7": {
+      "alias": null,
+      "input": 5.0,
+      "output": 25.0,
+      "cache_write": 6.25,
+      "cache_write_1h": 10.0,
+      "cache_read": 0.5,
+      "generation": "previous"
+    },
+    "claude-sonnet-4-6": {
+      "alias": null,
+      "input": 3.0,
+      "output": 15.0,
+      "cache_write": 3.75,
+      "cache_write_1h": 6.0,
+      "cache_read": 0.3,
+      "generation": "previous"
+    }
+  },
+  "aliases": {
+    "opus": "claude-opus-5",
+    "sonnet": "claude-sonnet-5",
+    "haiku": "claude-haiku-4-5",
+    "fable": "claude-fable-5",
+    "mythos": "claude-mythos-5"
+  }
+}

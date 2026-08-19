@@ -1,0 +1,23 @@
+{
+  "name": "symphony",
+  "displayName": "Symphony",
+  "description": "Choose the right model tier for every delegated subagent task, measure what it cost, and know when orchestrating is not worth it.",
+  "version": "0.1.0",
+  "author": {
+    "name": "ezescholz",
+    "url": "https://github.com/PapiScholz"
+  },
+  "homepage": "https://github.com/PapiScholz/symphony",
+  "repository": "https://github.com/PapiScholz/symphony",
+  "license": "MIT",
+  "keywords": [
+    "subagents",
+    "orchestration",
+    "model-selection",
+    "cost-optimization",
+    "delegation",
+    "multi-agent",
+    "haiku",
+    "token-budget"
+  ]
+}
