@@ -401,19 +401,14 @@ the skill would fire on its own: in real use only the `description` is always re
 to 130 tokens per skill, per `claude plugin details` — and the body loads when the description
 matches. Round 2's GREEN has the same gap.
 
-Closing it does not need a new harness. `claude plugin eval` runs cases against a plugin through
-the real loading path and adds a no-plugin baseline arm of its own (`--ablation with-without`),
-with graders marked `with-only` — including `tool_used: Skill` — acting as a plugin-*fired*
-indicator rather than part of the score. That is exactly the missing measurement, and it is the
-instrument for the next round.
+Closing it properly needs a harness that drives the real loading path. `claude plugin eval` is
+that harness — it runs cases against an installed plugin and adds its own no-plugin arm — but it
+is gated behind a per-organisation early-access flag that a user cannot enable themselves, so it
+is not a route this project can rely on and no eval suite is shipped here.
 
-**It is not usable yet from here.** `claude plugin eval` is in early access, and on the authoring
-machine it exits with `plugin eval is currently in early access` — `init` included, so not even a
-case template can be generated. No eval suite is shipped in this repo, because a suite that has
-never been executed is not a test, and committing one would repeat the mistake this document
-exists to record. When access lands, the three round-3 scenarios port over directly: each becomes
-a case, `scaffold_script` replaces the harness's repo scaffolding, `--runs 3` matches the rep
-count, and the ablation arm replaces `--safe-mode` plus the contamination probe.
+The limitation therefore stands, and is stated rather than worked around: **the GREEN results in
+this document show that the guidance changes behaviour when an agent reads it. They do not show
+that the skill fires on its own.** Anyone reproducing them should read them that way.
 
 ---
 
