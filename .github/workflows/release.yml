@@ -1,0 +1,75 @@
+name: Release
+
+# Fires on a version tag. Re-runs the full check suite before publishing, so a
+# release can never ship a tree that CI would have rejected — the tag is not
+# trusted just because a human pushed it.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to release (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run the full check suite
+        run: npm test
+
+      - name: Check the tag matches the manifests
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION="${TAG#v}"
+          PLUGIN=$(node -p "require('./.claude-plugin/plugin.json').version")
+          MARKET=$(node -p "require('./.claude-plugin/marketplace.json').plugins[0].version")
+          echo "tag=$VERSION plugin.json=$PLUGIN marketplace.json=$MARKET"
+          if [ "$VERSION" != "$PLUGIN" ] || [ "$VERSION" != "$MARKET" ]; then
+            echo "::error::Tag $TAG does not match plugin.json ($PLUGIN) / marketplace.json ($MARKET)."
+            echo "A release whose tag disagrees with its manifests installs a version nobody can reproduce."
+            exit 1
+          fi
+
+      - name: Extract this version's changelog section
+        id: notes
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION="${TAG#v}"
+          # Take from this version's heading up to the next "## " heading.
+          awk -v v="$VERSION" '
+            $0 ~ "^## " v { found=1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::error::No CHANGELOG.md section found for $VERSION."
+            exit 1
+          fi
+          echo "Extracted $(wc -l < release-notes.md) lines of notes."
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; updating notes."
+            gh release edit "$TAG" --notes-file release-notes.md
+          else
+            gh release create "$TAG" --title "$TAG" --notes-file release-notes.md
+          fi

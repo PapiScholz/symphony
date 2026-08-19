@@ -2,39 +2,57 @@
 
 ## 0.1.0 — 2026-08-19
 
-First release.
+First release. Two skills, the tooling to measure what orchestration actually consumes, and the
+test runs that decided which skills got written.
 
-### Added
+### Skills
 
-- **`orchestrating-subagents` skill** — the dispatch contract, the model × effort table, in-flight
-  signals for detecting mis-tiering, and five reference files (agent definition fields, platform
-  limits, workflows, prompt templates, learning log). Built with a RED-GREEN-REFACTOR cycle: 3
-  baseline agents without the skill produced 3 *different* behaviours (omitting `model` with a
-  rationalisation, choosing correctly, and applying one tier to the whole batch); 3 agents with the
-  skill converged on the same correct shape. The REFACTOR pass fixed a real defect the test exposed
-  — the skill originally told agents to pass `effort` to the `Agent` tool, which silently ignores it.
-- **`tools/cost-report.mjs`** — zero-dependency Node CLI computing real token usage per model from
-  Claude Code's own transcripts, split orchestrator vs subagent. Leads with tokens; dollar figures
-  are subordinated under a section for consumption-billed users, because on Pro/Max subscriptions
-  they appear on no bill. `--no-usd` removes them entirely.
+- **`orchestrating-subagents`** — the dispatch contract, the model × effort table, in-flight signals
+  for detecting mis-tiering, and five reference files (agent definition fields, platform limits,
+  workflows, prompt templates, learning log). Built RED-GREEN-REFACTOR: three baseline agents
+  without it produced three *different* behaviours (omitting `model` with a rationalisation,
+  choosing correctly, applying one tier to the whole batch); three with it converged on the same
+  shape. The refactor pass fixed a defect the test exposed — the skill originally told agents to
+  pass `effort` to the `Agent` tool, which silently ignores it.
+- **`measuring-orchestration-cost`** — establishing how the user is billed before quoting any
+  figure, reading token usage from the transcripts, and the counterfactual with its ceiling. Its
+  baseline failed 3/3 in a clean room: none established the billing model, none named `isSidechain`,
+  one asserted "orchestration is cheaper at scale" without measuring it, and one repeated the
+  folklore `haiku << sonnet << opus` ratio (real Opus:Haiku is 5×, not the 60× circulating
+  elsewhere).
+
+### Tooling
+
+- **`tools/cost-report.mjs`** — zero-dependency Node CLI computing real per-model token usage from
+  Claude Code's own transcripts, split orchestrator vs subagent. Leads with tokens; dollars are
+  subordinated under a pay-per-token section, because on Pro/Max they appear on no bill. `--no-usd`
+  removes them entirely. Verified against a hand-computed figure, agreeing to the cent.
 - **`tools/pricing.json`** — per-model prices with sources and retrieval date.
 - **`tools/transcript-schema.json`** — the reverse-engineered transcript format the report reads.
 - **`hooks/subagent-dispatch-log.{ps1,sh}`** — a `PreToolUse` observer recording which model each
   dispatch requested, marking `INHERITED` when none was set. Never blocks, always exits 0, so it
   cannot cost a retry.
-- **`benchmark/red-baselines.md`** — the runs where three planned skills were tested and cancelled
-  because their baselines did not fail.
 
-### Not included, on purpose
+### CI
 
-- `measuring-orchestration-cost`, `writing-agent-specs`, `verifying-agent-output` — planned, tested,
-  dropped. See `benchmark/red-baselines.md`.
-- An A/B benchmark comparing orchestrated against single-model runs. Not run yet; METHODOLOGY says
-  so plainly rather than implying otherwise.
+- **`.github/workflows/ci.yml`** plus `npm test` — seven checks: skill frontmatter (including that
+  `name` matches its directory), manifest validity and version agreement, `node --check`, hook
+  syntax with CRLF and BOM scans, hook behaviour (four stdin cases must each exit 0 with empty
+  stdout), pricing sanity with alias resolution, and internal link resolution. **Every check was
+  proven by injecting a violation and confirming it fails**, then reverting.
+- **`.github/workflows/release.yml`** — re-runs the suite on a version tag, refuses to publish if
+  the tag disagrees with the manifests, and builds release notes from this file.
+
+### Dropped on purpose
+
+`verifying-agent-output` and `writing-agent-specs` were planned, tested and not written: their
+baselines did not fail. See `benchmark/red-baselines.md`, which also retracts a first round of
+testing that was contaminated and proved nothing.
 
 ### Known limitations
 
-- All measurements are N=1: one session, one author, one project.
+- Measurements are N=1: one session, one author, one project.
 - The re-tiering figure is a counterfactual and an upper bound, not a measurement.
 - The transcript schema is reverse-engineered and drifts between Claude Code releases.
 - The subscription argument rests partly on a first-hand incident with no published artifact.
+- No A/B benchmark comparing orchestrated against single-model runs has been executed.

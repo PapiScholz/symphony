@@ -1,110 +1,120 @@
-# RED baselines: three skills that were tested and deliberately not written
+# RED baselines: what got tested, what got written, what got dropped
 
-Symphony ships one skill. Three more were planned, scoped, and then **cancelled by their own
-test results**. This document is the evidence, because a repo that claims to test its skills owes
-you the run where the test said "don't".
+Symphony ships two skills. Two more were planned and **cancelled by their own test results**. This
+document is the evidence, including a first round of testing that was invalid and had to be redone.
 
 ## The rule being followed
 
-`superpowers:writing-skills` — the skill-authoring method this repo uses — states it plainly:
+`superpowers:writing-skills`, the authoring method used here, states it plainly:
 
 > Always include a no-guidance control. **If the control doesn't exhibit the failure, there is
 > nothing to fix — stop, don't author the guidance.**
 
-So before writing a skill, you run the scenario it targets against agents that do **not** have it,
-and you watch them fail. If they don't fail, the skill has nothing to teach.
+You run the scenario the skill targets against agents that do not have it, and you watch them fail.
+If they don't fail, the skill has nothing to teach.
 
-## Method
+## Round 1 was contaminated. It is reported anyway.
 
-Three scenarios, one per planned skill, 3 repetitions each, 9 agents total, all on `sonnet`, all in
-fresh context with no access to the planned skill. Date: 2026-08-19.
+The first pass ran nine agents inside the `Almacen` repo — a project whose `CLAUDE.md` already
+carries strong verification rules. One agent quoted it verbatim: *"un resultado NEGATIVO de un
+one-liner ad-hoc no es evidencia"* ("a negative result from an ad-hoc one-liner is not evidence").
+The `cost` scenario was worse than contaminated: the agent found and ran this repo's own
+`tools/cost-report.mjs`, so it measured an agent **holding the tool**, not a control lacking it.
 
----
+That round concluded all three skills were unnecessary. **That conclusion was not supported by the
+evidence**, and round 2 overturned part of it.
 
-## 1. `writing-agent-specs` — CANCELLED, 3/3 passed
+## Round 2: clean room
 
-**Planned premise:** agents write vague dispatch prompts, so cheap models fail on work they could
-have handled with a closed spec.
+Nine runs, `claude -p` headless, `sonnet`, fresh context each, executed from an empty temp directory
+with **no project `CLAUDE.md` anywhere in the ancestor chain** (verified by walking to the filesystem
+root) and no Symphony checkout in reach.
 
-**Scenario given:** delegate entity extraction from 20 markdown docs into a fixed JSON schema to a
-`haiku` subagent. Write the exact prompt string.
+Remaining known contamination, disclosed: the user-level `~/.claude/CLAUDE.md` still loads, as it
+does in any real session on that machine. A fully virgin environment would need a separate config
+dir with its own credentials.
 
-**What the control actually did — all three:**
-- Pasted the full schema inline rather than referring to it
-- Gave absolute file paths, enumerated or discovered via glob
-- Specified a unique-id scheme to prevent collisions across documents
-- Named an exact output path and required valid JSON with no fences
-- Constrained the reply format ("do not paste the JSON back")
-- Told the agent not to ask clarifying questions and to proceed on ambiguity
-
-One rep went further than the brief: it checked the repo and found `docs/` actually holds 31 `.md`
-files, not the 20 stated, and wrote the prompt to discover the real set instead of hardcoding a
-wrong count.
-
-**Verdict:** the failure the skill was meant to prevent did not occur. Not written.
+Scored against explicit per-scenario criteria fixed before reading the outputs.
 
 ---
 
-## 2. `verifying-agent-output` — CANCELLED, 3/3 passed
+## `verifying-agent-output` — DROPPED. 5/5, all three reps
 
-**Planned premise:** orchestrators trust a subagent's "done" message instead of checking the
-artifact.
+**Premise:** orchestrators trust a subagent's "done" instead of checking the artifact.
 
-**Scenario given:** 12 subagents return, all reporting success. What do you do before merging?
+**Scenario:** 12 subagents return, all reporting success. What do you do before merging?
 
-**What the control actually did — all three:**
-- Refused the self-report explicitly: "an agent's final message describes intent, not verified
-  outcome"
-- Checked file existence, non-emptiness, and count against the expected number
-- Validated JSON parses, then validated against the schema separately
-- **Cross-checked each agent's claimed counts against the counts actually in the file** — naming a
-  mismatch as evidence the agent hallucinated its own summary
-- Checked for duplicate ids and dangling edge references across the merged set, a failure that only
-  appears at merge time
-- Spot-checked content against source files, noting schema-valid output can still be fabricated
-- Merged only after all checks passed, then re-validated the merged artifact
+Every rep, unprompted, refused the self-report and listed: verify the file exists and is non-empty,
+validate it parses, validate against the schema separately, **cross-check each agent's claimed
+counts against the counts actually in the file**, hunt duplicate ids and dangling edge references
+across the merged set, spot-check content against sources, and only then merge. One added checking
+`LastWriteTime` to catch a stale file from a previous run.
 
-One rep also checked `LastWriteTime`, to catch a stale file from a previous run being mistaken for
-a fresh success.
-
-**Verdict:** comprehensively covered without the skill. Not written.
+Identical result in both rounds. The failure this skill targets does not occur. **Not written.**
 
 ---
 
-## 3. `measuring-orchestration-cost` — INCONCLUSIVE, test invalid
+## `writing-agent-specs` — DROPPED. 3-4/5, marginal
 
-**Scenario given:** after a 12-agent run, answer the user's "did orchestrating actually pay off?"
+**Premise:** agents write vague dispatch prompts, so cheap models fail on work they could handle.
 
-**Why the test is void:** the agent found and ran `tools/cost-report.mjs` — the tool this repo had
-already built — and answered using it. That measures an agent holding the tool, not a control
-lacking the knowledge. The scenario cannot be run inside this repo.
+**Scenario:** delegate schema-bound extraction to a `haiku` subagent; write the exact prompt.
 
-**Verdict:** no valid baseline, so no skill. Re-testing would require a machine without Symphony
-installed.
+All three pasted the schema inline, gave absolute paths, defined a unique-id scheme to prevent
+collisions across documents, and named an exact output path. The consistent gap was minor: two of
+three did not tell the subagent to proceed without asking clarifying questions.
+
+A skill for one missing sentence is padding. **Not written.**
 
 ---
 
-## Contamination worth disclosing
+## `measuring-orchestration-cost` — WRITTEN. Baseline failed 3/3 on the thing that matters
 
-These baselines ran inside the `Almacen` repo, whose `CLAUDE.md` already carries strong verification
-rules — including one that a rep quoted verbatim: *"un resultado NEGATIVO de un one-liner ad-hoc no
-es evidencia"* ("a negative result from an ad-hoc one-liner is not evidence").
+**Scenario:** after a 12-agent run, answer the user's "did orchestrating actually pay off?"
 
-So the control was not a naked agent. It was an agent already primed by a well-instructed repo. A
-cleaner test would run in an empty directory with no `CLAUDE.md`, and **might** show the failures
-these runs did not.
+Round 1 could not test this at all — the agent used the repo's own tool. In the clean room the
+failure is consistent and specific:
 
-That cuts both ways, and honesty requires stating both:
-- These results do not prove the skills would be useless everywhere.
-- They do prove the skills were unnecessary **here**, under the conditions actually tested — and an
-  untested skill written anyway is exactly the padding this repo exists to argue against.
+- **3/3 never established how the user is billed.** None asked or noted that on a Pro/Max
+  subscription a dollar figure appears on no invoice. One went straight to
+  `$ cost = tokens × per-model rate`.
+- **3/3 never named `isSidechain`**, the field that separates orchestrator turns from subagent
+  turns. One proposed summing `subagent_tokens` from completion notifications — transient
+  conversation state — rather than the durable transcripts.
+- **One asserted the conclusion outright**: *"this is the actual mechanism behind 'orchestration is
+  cheaper at scale'"* — the claim this repo exists to qualify, stated without measuring it.
+- One repeated the folklore ratio `haiku << sonnet << opus`. Real Opus:Haiku is 5×, not the 60×
+  circulating in comparable skills.
 
-## What this means for the repo
+That is a real, repeatable failure in the exact place a wrong answer is most costly: a fabricated
+cost figure is indistinguishable from a measured one until somebody audits it.
 
-Symphony ships **one** skill instead of four. The dropped three cost nine agent runs to disprove,
-and that is the point: the method's value is as much in the skills it stops you writing as in the
-ones it lets through.
+**Written.**
 
-If you want to challenge this, the scenarios above are reproducible verbatim. Run them in a clean
-directory. If your control fails where ours passed, open an issue with the transcript — that is a
+### GREEN: the same scenario, same clean room, with the skill loaded
+
+Three more runs, identical scenario and environment, the skill read first. Scored on the four
+criteria the baseline failed, fixed before reading the outputs:
+
+| Criterion | Without the skill | With the skill |
+|---|---|---|
+| Establishes the billing model before quoting money | 0/3 | **3/3** |
+| Names `isSidechain` to separate orchestrator from subagents | 0/3 | **3/3** |
+| Labels the counterfactual as an upper bound | 0/3 | **3/3** |
+| Accounts for the cache re-priming tax | 0/3 | **3/3** |
+
+Zero to three on every axis, with the reps converging on the same shape rather than each finding
+its own answer — which is the signal the method looks for. Reproduce it by running the scenario in
+`benchmark/` with and without `skills/measuring-orchestration-cost/SKILL.md` in context.
+
+---
+
+## What this cost, and what it bought
+
+Eighteen agent runs across two rounds. One skill written, two dropped, and one earlier conclusion
+retracted. The method's value shows up as much in the skills it stops you writing as in the ones it
+lets through — and in catching that round 1 proved nothing.
+
+If you want to challenge any of this, the scenarios are reproducible verbatim. Run them in a clean
+directory. If your control fails where ours passed, open an issue with the transcript: that is a
 contribution, and the skill gets written.

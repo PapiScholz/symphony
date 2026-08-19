@@ -177,22 +177,42 @@ It sets out:
   dispatch prompts by role), `workflows.md` (escalating to a scripted workflow, per-stage
   tiering), and `learning-log.md` (recording outcomes and reusing them next batch).
 
-### Three skills that were tested and deliberately not written
+## The second skill: `measuring-orchestration-cost`
 
-Symphony ships **one** skill. Three more were planned — measuring cost, writing agent specs,
-verifying agent output — and then cancelled by their own test results.
+`skills/measuring-orchestration-cost/SKILL.md` loads before you quote any cost figure, saving,
+or percentage for agent work — or when a run hits a usage limit and you have to explain where
+the budget went.
 
-The authoring method used here requires running a skill's target scenario against agents that
-*don't* have it, and watching them fail, before writing a line. Nine agents were run across
-three scenarios. Two scenarios came back **3/3 passing**: without any skill, agents already
-pasted the full schema into dispatch prompts, gave absolute paths and unique-id schemes, and
-already refused to trust a subagent's "done" message — checking the artifact on disk, validating
-the schema, and cross-checking claimed counts against real ones. The third scenario was invalid:
-the agent found and ran this repo's own `cost-report.mjs`, so it measured an agent holding the
-tool rather than a control lacking it.
+It exists because its baseline failed, repeatably, on the thing that matters most. Three agents
+in a clean room, asked "did orchestrating pay off, show me":
 
-Writing those skills anyway would have padded the repo with guidance that demonstrably teaches
-nothing. The full baselines, the contamination in them, and how to challenge the result are in
+- **None established how the user is billed.** One went straight to
+  `$ cost = tokens × per-model rate` — a figure that appears on no invoice for a Pro/Max
+  subscriber.
+- **None named `isSidechain`**, the field separating orchestrator turns from subagent turns.
+  One proposed summing token counts from completion notifications — transient conversation
+  state — instead of the durable transcripts.
+- **One asserted the conclusion**: *"this is the actual mechanism behind 'orchestration is
+  cheaper at scale'"*, stated without measuring it.
+- **One repeated the folklore ratio** `haiku << sonnet << opus`. Real Opus:Haiku is 5×, not the
+  60× circulating in comparable skills.
+
+So it teaches: establish the billing model first, read usage from the transcripts, price each
+token component separately, and never let a counterfactual borrow the authority of a
+measurement.
+
+### Two skills that were tested and deliberately not written
+
+`verifying-agent-output` and `writing-agent-specs` were planned and cancelled by their own
+tests. Without any skill, agents already refused to trust a subagent's "done" — checking the
+artifact on disk, validating the schema, cross-checking claimed counts against real ones, and
+hunting dangling references before merging (5/5, all reps). And they already pasted full schemas
+into dispatch prompts with absolute paths and unique-id schemes. Writing those would have padded
+the repo with guidance that demonstrably teaches nothing.
+
+A first round of this testing was **contaminated and is retracted** — it ran inside a repo whose
+`CLAUDE.md` already carries verification rules, and its cost scenario used this repo's own tool.
+The clean-room re-run, the retraction, and how to challenge any of it are in
 [`benchmark/red-baselines.md`](benchmark/red-baselines.md).
 
 ## Install

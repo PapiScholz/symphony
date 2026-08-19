@@ -1,0 +1,8 @@
+{
+  "name": "symphony-ci",
+  "private": true,
+  "description": "Zero-dependency CI checks for the symphony skills repo.",
+  "scripts": {
+    "test": "node scripts/check-skill-frontmatter.mjs && node scripts/check-manifests.mjs && node scripts/check-node-syntax.mjs && node scripts/check-hook-syntax.mjs && node scripts/check-hook-behavior.mjs && node scripts/check-pricing.mjs && node scripts/check-links.mjs"
+  }
+}

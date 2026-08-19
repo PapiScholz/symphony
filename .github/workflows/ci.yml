@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Every job below is a thin wrapper around a script under scripts/ that can
+# also be run locally with `npm test` (or individually with
+# `node scripts/check-*.mjs`). No step here does anything a contributor can't
+# reproduce on their own machine before pushing.
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Skill frontmatter validity
+        run: node scripts/check-skill-frontmatter.mjs
+
+      - name: Plugin manifest validity
+        run: node scripts/check-manifests.mjs
+
+      - name: Node syntax check (.mjs)
+        run: node scripts/check-node-syntax.mjs
+
+      - name: Hook shell syntax (sh -n, CRLF, BOM)
+        run: node scripts/check-hook-syntax.mjs
+
+      - name: Hook behavior (never blocks, never writes stdout)
+        run: node scripts/check-hook-behavior.mjs
+
+      - name: Pricing sanity
+        run: node scripts/check-pricing.mjs
+
+      - name: Internal link check
+        run: node scripts/check-links.mjs
