@@ -92,7 +92,69 @@ function main() {
     }
   }
 
+  checkSkillsShConfig(reporter);
+
   reporter.finish();
+}
+
+// skills.sh.json curates how this repo's skills are grouped on its skills.sh page. skills.sh
+// searches over a skill's name and description only -- not the README -- so that page and those
+// fields are the entire discovery surface. A skill missing from the config silently lands in the
+// ungrouped bucket, which is the kind of failure nobody notices from inside the repo.
+function checkSkillsShConfig(reporter) {
+  const configPath = path.join(REPO_ROOT, "skills.sh.json");
+  if (!fs.existsSync(configPath)) return; // optional file
+
+  const rel = relRoot(configPath);
+  let config;
+  try {
+    config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  } catch (err) {
+    reporter.fail(`${rel}: is not valid JSON — ${err.message}`);
+    return;
+  }
+
+  if (!Array.isArray(config.groupings)) {
+    reporter.fail(`${rel}: 'groupings' must be an array`);
+    return;
+  }
+  if (config.notGrouped !== undefined && config.notGrouped !== "top" && config.notGrouped !== "bottom") {
+    reporter.fail(`${rel}: 'notGrouped' must be "top" or "bottom", got ${JSON.stringify(config.notGrouped)}`);
+  }
+
+  const listed = [];
+  for (const [i, group] of config.groupings.entries()) {
+    if (!group || typeof group.title !== "string" || !group.title.trim()) {
+      reporter.fail(`${rel}: groupings[${i}] has no non-empty 'title'`);
+    }
+    if (!Array.isArray(group?.skills)) {
+      reporter.fail(`${rel}: groupings[${i}] ('${group?.title}') has no 'skills' array`);
+      continue;
+    }
+    listed.push(...group.skills);
+  }
+
+  const onDisk = fs
+    .readdirSync(path.join(REPO_ROOT, "skills"), { withFileTypes: true })
+    .filter((d) => d.isDirectory() && fs.existsSync(path.join(REPO_ROOT, "skills", d.name, "SKILL.md")))
+    .map((d) => d.name);
+
+  for (const name of onDisk) {
+    if (!listed.includes(name)) {
+      reporter.fail(
+        `${rel}: skill '${name}' exists on disk but is in no grouping — it would fall into the ungrouped bucket on skills.sh`
+      );
+    }
+  }
+  for (const name of listed) {
+    if (!onDisk.includes(name)) {
+      reporter.fail(`${rel}: grouping lists '${name}', which is not a skill directory under skills/`);
+    }
+  }
+  const dupes = listed.filter((n, i) => listed.indexOf(n) !== i);
+  for (const name of new Set(dupes)) {
+    reporter.fail(`${rel}: skill '${name}' appears in more than one grouping`);
+  }
 }
 
 main();

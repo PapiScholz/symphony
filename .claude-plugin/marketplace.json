@@ -10,7 +10,7 @@
       "name": "symphony",
       "source": "./",
       "description": "Choose the right model tier for every delegated subagent task, measure what it cost, and know when orchestrating is not worth it.",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "author": {
         "name": "ezescholz",
         "url": "https://github.com/PapiScholz"

@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.2.0 — 2026-08-19
+
+### Added
+
+- **`when-not-to-orchestrate`** — the three gates a task must pass before it is worth fanning out
+  (divisible, closable, checkable), the per-agent overhead that does not amortise, and the failure
+  only parallelism can create. Its RED baseline failed behaviourally: three controls running inside
+  a real 40-file repository were told to parallelise a 12-site rename, two did it — one reporting
+  "All 15 agents finished cleanly" — and a third watched one of its own agents flag files it had
+  never touched and dismissed it as "not an actual issue". GREEN is **partial and published as
+  partial**: declining goes 1/3 to 3/3 and the concrete alternative 1/3 to 3/3, while naming the
+  per-agent overhead stayed 0/3. A refactor targeting that gap made the primary criterion worse and
+  was reverted; both arms are recorded.
+- **`skills.sh.json`** — curates how the three skills group on the repo's skills.sh page. skills.sh
+  searches over a skill's name and description only, never the README, so that page and those
+  fields are the whole discovery surface.
+- **CI check `check-benchmark-scripts.mjs`** — `bash -n`, CRLF and BOM checks on every benchmark
+  script, plus a behavioural check that **fires** the clean-room guards and fails if they do not
+  abort. Proven red four ways before being wired in.
+- **`check-manifests.mjs` now validates `skills.sh.json`** — every skill on disk must appear in
+  exactly one grouping. Proven red four ways.
+- **A contamination probe in the benchmark harness** that asks the model what skills it can see and
+  aborts the round if a Symphony skill answers.
+
+### Fixed
+
+- **Round 3's first nine baselines were retracted.** They passed every filesystem guard and were
+  still contaminated: Claude Code loads user-level plugins into every session on the machine,
+  including headless `-p` runs from an empty directory, so the controls had the skills under test
+  in context and quoted them back. All model calls in the harness now pass `--safe-mode`, and the
+  probe above verifies it rather than trusting it.
+- **The round-2 harness does not reproduce its documented clean room.** `run-baselines.sh` runs
+  from inside this repo, where `skills/` and `tools/cost-report.mjs` are reachable. The script is
+  kept as-is, since it produced published results, with the defect stated in its header and in
+  `benchmark/red-baselines.md`.
+- **The agent-teams "roughly 7x" figure is now sourced.** It is Anthropic's, verbatim, from the
+  Claude Code costs page — previously asserted without a citation in a repo whose whole argument is
+  that it shows its numbers.
+- `CONTRIBUTING.md` said three planned skills had been cancelled; two had.
+- `.gitignore` now covers `graphify-out/` and `benchmark/scenarios/out/`, which were only being
+  excluded by a global ignore file on the author's machine.
+
+### Changed
+
+- **The install command moved from line 218 to the top of the README**, with a three-skill summary
+  above it. The evidence and its caveats are untouched and stay in the same file.
+- Both existing skill descriptions gained search terms additively — no existing trigger condition
+  was weakened.
+- `measuring-orchestration-cost` gained a **"Two limits, not one"** section separating the context
+  window from cumulative consumption. 3/3 controls in round 3 treated them as one resource.
+
 ## 0.1.1 — 2026-08-19
 
 ### Fixed

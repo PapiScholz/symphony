@@ -41,5 +41,8 @@ jobs:
       - name: Pricing sanity
         run: node scripts/check-pricing.mjs
 
+      - name: Benchmark harness (bash syntax, clean-room guards fire)
+        run: node scripts/check-benchmark-scripts.mjs
+
       - name: Internal link check
         run: node scripts/check-links.mjs

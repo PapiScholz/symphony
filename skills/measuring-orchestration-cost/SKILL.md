@@ -1,6 +1,6 @@
 ---
 name: measuring-orchestration-cost
-description: Use when asked whether delegating paid off, whether a run was expensive, or how much a fan-out cost — and before quoting any cost figure, saving, or percentage for agent work. Also use when writing a cost claim into a report, README, or commit message, or when a session hit a usage limit and you need to explain where the budget went.
+description: Use when asked whether delegating paid off, whether a run was expensive, or how much a fan-out cost in tokens — and before quoting any cost figure, saving, or percentage for agent work. Also use when writing a cost claim into a report, README, or commit message, or when a session hit a usage limit and you need to explain where the token budget went.
 ---
 
 # Measuring Orchestration Cost
@@ -21,6 +21,20 @@ Before computing a single dollar, establish how the user is billed. Getting this
 Claude Code's own docs: *"Claude Max and Pro subscribers have usage included in their subscription, so the session cost figure isn't relevant for billing purposes."* Quoting a dollar saving to a flat-rate subscriber is a number that appears on no bill.
 
 Unknown billing? Ask, or lead with tokens — they are true either way.
+
+## Two limits, not one
+
+"Running out of context" and "running out of budget" are different failures and get conflated
+constantly — in testing, 3/3 controls treated them as one resource.
+
+| | What it is | What it is measured in | What fixes it |
+|---|---|---|---|
+| **Context window** | A per-session capacity limit. Fills with what is *in* this conversation | Tokens currently resident | Keep payloads out: artifacts to disk, capped returns, a fresh session |
+| **Consumption** | Cumulative spend against a quota or an invoice | Tokens *ever* processed, priced per component | Cheaper tiers, fewer turns, less re-priming |
+
+A subagent's internal work never enters the orchestrator's window; only what it returns does. It
+does count against consumption in full. So a fan-out can be cheap on the window and expensive on
+the quota, or the reverse. Name which one you are answering about before you answer.
 
 ## Where the data actually is
 

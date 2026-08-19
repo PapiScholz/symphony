@@ -1,5 +1,15 @@
 #!/bin/bash
 # RED baselines re-run in a clean directory (no project CLAUDE.md, no symphony repo).
+#
+# KNOWN DEFECT, kept as-is because this is the artifact that produced round 2's published
+# results and rewriting it would misrepresent them. The `cd` below puts the working
+# directory at benchmark/scenarios/ -- INSIDE this repo -- so a baseline agent can reach
+# skills/ and tools/cost-report.mjs. That does not reproduce the clean room that
+# benchmark/red-baselines.md describes for round 2. See the section "Correction to round
+# 2's published harness" in that file for what is and is not being claimed about it.
+#
+# For a harness that ENFORCES the clean room instead of asserting it, and aborts when the
+# conditions are not met, use run-baselines-round3.sh.
 # 3 scenarios x 3 reps, all on sonnet, headless, fresh context each.
 cd "$(dirname "$0")" || exit 1  # run from anywhere; outputs land in ./out
 OUT="$(pwd)/out"

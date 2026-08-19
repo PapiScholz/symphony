@@ -1,0 +1,21 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Decide",
+      "description": "Whether to fan out at all. Orchestrating is a conditional win, and the gate comes before the dispatch.",
+      "skills": ["when-not-to-orchestrate"]
+    },
+    {
+      "title": "Dispatch",
+      "description": "Which model and how much reasoning effort each delegated task gets, instead of silently inheriting yours.",
+      "skills": ["orchestrating-subagents"]
+    },
+    {
+      "title": "Measure",
+      "description": "What a run actually consumed, read from your own transcripts, priced against how you are really billed.",
+      "skills": ["measuring-orchestration-cost"]
+    }
+  ]
+}

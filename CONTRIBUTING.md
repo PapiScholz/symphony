@@ -11,7 +11,7 @@ Concretely, a skill PR needs:
 1. **A pressure scenario** — a realistic task that tempts the failure the skill prevents.
 2. **A baseline (RED)** — that scenario run against at least 3 fresh agents that do not have the
    skill, with their behaviour recorded. If they pass, stop: the skill has nothing to teach. That
-   result is still worth a PR — see `benchmark/red-baselines.md`, where three planned skills were
+   result is still worth a PR — see `benchmark/red-baselines.md`, where two planned skills were
    cancelled exactly this way.
 3. **A verification (GREEN)** — the same scenario, same rep count, with the skill loaded.
 4. **The transcripts or a faithful summary**, so a reader can re-run and disagree.

@@ -2,6 +2,41 @@
 
 Skills for orchestrating Claude Code subagents.
 
+Three skills, plus the tooling that produced the numbers they rest on. Every skill here was
+written only after a no-guidance control was watched failing the same scenario — the ones
+whose controls passed were dropped, and that is documented too. Four planned skills have been
+dropped that way so far.
+
+- **`when-not-to-orchestrate`** — the three gates a task has to pass before it is worth fanning
+  out, and the failure that only parallelism can create.
+- **`orchestrating-subagents`** — set the model tier per delegated task instead of silently
+  inheriting the orchestrator's, and know the signals that say you got it wrong.
+- **`measuring-orchestration-cost`** — establish how you're actually billed before quoting any
+  cost figure, and read the real numbers off your own transcripts.
+
+Orchestrating is a **conditional** win, not a universal one: it pays when the work is divisible,
+the spec is closable, and verification is mechanical. [When it isn't](#when-not-to-orchestrate),
+this repo says so.
+
+## Install
+
+```
+npx skills add PapiScholz/symphony              # skills only
+```
+
+```
+/plugin marketplace add PapiScholz/symphony     # then: /plugin install symphony@symphony
+```
+
+The plugin route also installs the dispatch-logging hook (below); the skills-only route
+does not. It needs `sh` on PATH — standard on macOS and Linux, and present on Windows
+through Git Bash.
+
+> **If you already configured that hook by hand in `settings.json`, remove your entry when
+> you install the plugin.** Plugin hooks *merge* with user hooks rather than replacing
+> them, so keeping both logs every dispatch twice. (0.1.0 shipped the hook scripts without
+> registering them at all — see the CHANGELOG.)
+
 ## The problem
 
 Delegating work to a subagent has two dials: which model runs it, and how much reasoning
@@ -201,38 +236,54 @@ So it teaches: establish the billing model first, read usage from the transcript
 token component separately, and never let a counterfactual borrow the authority of a
 measurement.
 
-### Two skills that were tested and deliberately not written
+## The third skill: `when-not-to-orchestrate`
 
-`verifying-agent-output` and `writing-agent-specs` were planned and cancelled by their own
-tests. Without any skill, agents already refused to trust a subagent's "done" — checking the
+`skills/when-not-to-orchestrate/SKILL.md` loads before work gets fanned out to parallel agents —
+including when a user asks for it directly — and before splitting a refactor, rename, migration or
+sweep across subagents.
+
+Its baseline failed behaviourally, not verbally. Three controls ran inside a real repository (40
+files, 12 mentioning one config key) and were told: *"Throw this at a bunch of agents in parallel so
+it goes fast — rename `apiTimeout` to `requestTimeoutMs` everywhere."* Two of three did it, one
+reporting **"All 15 agents finished cleanly"** — fifteen agents to change one key in fifteen files.
+Zero of three named the fixed per-agent overhead. Zero named the coupling. Zero gave a rule that
+transfers to another task.
+
+The third produced the finding the skill is built on:
+
+> "the config.js/services-1–4 agent flagged an 'anomaly' mid-run — it saw other files already
+> renamed that it never touched. That's just the other three parallel agents finishing their edits
+> concurrently, **not an actual issue**."
+
+The coupling surfaced, was recognised, and was dismissed — by the orchestrator that created it.
+
+So it teaches three gates — **divisible, closable, checkable** — and the rule the controls kept
+missing: *N locations of one change is one task, not N tasks*.
+
+**Its GREEN is partial, and is published as partial.** With the skill loaded, declining the fan-out
+goes 1/3 → 3/3 and giving the concrete cheaper alternative goes 1/3 → 3/3, with the three reps
+converging on the same shape and none of them quoting the skill back. But naming the fixed
+per-agent overhead stayed at 0/3, and stating the rule as a criterion rather than as a fact about
+today's files reached only 1/3. A refactor aimed at exactly those two made the primary criterion
+*worse* and was reverted. Both arms, the scoring rule fixed before either was read, and what it
+does not do are in [`benchmark/red-baselines.md`](benchmark/red-baselines.md).
+
+### Three skills that were tested and deliberately not written
+
+`verifying-agent-output`, `writing-agent-specs` and a planned skill about the orchestrator's own
+context budget were all cancelled by their own tests. Without any skill, agents already refused to trust a subagent's "done" — checking the
 artifact on disk, validating the schema, cross-checking claimed counts against real ones, and
 hunting dangling references before merging (5/5, all reps). And they already pasted full schemas
-into dispatch prompts with absolute paths and unique-id schemes. Writing those would have padded
-the repo with guidance that demonstrably teaches nothing.
+into dispatch prompts with absolute paths and unique-id schemes. And asked where their own context
+had gone at 78% full, three controls independently proposed schema-capped returns, artifacts written
+to disk with only a path returned, and compaction as a last resort rather than a plan (3/3 on both
+mechanism criteria). Writing those would have padded the repo with guidance that demonstrably
+teaches nothing.
 
 A first round of this testing was **contaminated and is retracted** — it ran inside a repo whose
 `CLAUDE.md` already carries verification rules, and its cost scenario used this repo's own tool.
 The clean-room re-run, the retraction, and how to challenge any of it are in
 [`benchmark/red-baselines.md`](benchmark/red-baselines.md).
-
-## Install
-
-```
-npx skills add PapiScholz/symphony              # skills only
-```
-
-```
-/plugin marketplace add PapiScholz/symphony     # then: /plugin install symphony@symphony
-```
-
-The plugin route also installs the dispatch-logging hook (below); the skills-only route
-does not. It needs `sh` on PATH — standard on macOS and Linux, and present on Windows
-through Git Bash.
-
-> **If you already configured that hook by hand in `settings.json`, remove your entry when
-> you install the plugin.** Plugin hooks *merge* with user hooks rather than replacing
-> them, so keeping both logs every dispatch twice. (0.1.0 shipped the hook scripts without
-> registering them at all — see the CHANGELOG.)
 
 ## What's in the repo
 
@@ -258,6 +309,11 @@ above (orchestrator vs. subagent, and subagent-by-model, in both tokens and doll
 directly — no other setup required. See "How to reproduce the numbers" below.
 
 ## When NOT to orchestrate
+
+This is now a skill of its own — `when-not-to-orchestrate`, above — which covers the three gates
+and the coupling failure. The table below is the longer-form version, including the one case the
+skill deliberately leaves out: when the orchestrator's own cost, not the subagents', is what
+dominates.
 
 | Situation | Why |
 |---|---|

@@ -33,8 +33,15 @@ Disabled by default. Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`; without 
 up, no team directories are written, and no teammates are spawned or proposed.
 
 **Cost: roughly 7× a standard session** when teammates run in plan mode, because each teammate is a
-separate Claude instance with its own context window. Cost scales about linearly with team size.
-Docs suggest 3-5 teammates for most workflows and Sonnet for teammates.
+separate Claude instance with its own context window. That multiplier is Anthropic's, not an
+estimate made here — [the costs page](https://code.claude.com/docs/en/costs) states *"agent teams
+use approximately 7x more tokens than standard sessions when teammates run in plan mode, because
+each teammate maintains its own context window and runs as a separate Claude instance."*
+
+Scaling is stated separately, not bundled with that number:
+[agent-teams](https://code.claude.com/docs/en/agent-teams) says *"token costs scale linearly: each
+teammate has its own context window and consumes tokens independently."* The same docs suggest
+*"start with 3-5 teammates for most workflows"* and *"use Sonnet for teammates."*
 
 **The trap worth knowing before enabling them:** with teams enabled, ordinary delegation changes —
 a subagent that Claude names on its own *launches as a teammate*. So a flow written expecting

@@ -2,6 +2,9 @@
 subagent-runs.jsonl
 *.local.jsonl
 benchmark/runs/
+benchmark/scenarios/out/
+.guardcheck-probe/
+graphify-out/
 
 # OS / editor
 .DS_Store

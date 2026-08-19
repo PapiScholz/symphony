@@ -1,6 +1,6 @@
 ---
 name: orchestrating-subagents
-description: Use when about to spawn one or more subagents, agent teams, or a workflow — a single delegated search, a parallel fan-out, or a repeated batch. Also use when writing or editing a .claude/agents definition, when a delegated run hit a rate limit or cost more than expected, or when a subagent came back after far more or far fewer turns than the work warranted.
+description: Use when about to spawn one or more subagents, agent teams, or a workflow — a single delegated search, a parallel fan-out, or a repeated batch — and whenever choosing which model a delegated task runs on instead of letting it inherit yours. Also use when writing or editing a .claude/agents definition, when a delegated run hit a rate limit or cost more than expected, or when a subagent came back after far more or far fewer turns than the work warranted.
 ---
 
 # Orchestrating Subagents
