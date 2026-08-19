@@ -114,12 +114,25 @@ Three reasons, stated plainly:
    result — which happens, and would eat into the saving. The actual saving from
    re-running the same work on cheaper tiers could be smaller than $54.68, possibly
    substantially.
-2. **Prompt cache is not re-created for free.** Each subagent in a parallel fan-out pays
-   its own cache-write cost once, on first use; a single continuous session sharing one
-   context would not repeat that cost per subagent. This works in the other direction —
-   it means the *actual* multi-agent spend already includes overhead a single-agent
-   equivalent would not — but it does not change the upper-bound status of the re-tiering
-   figure itself.
+2. **Prompt cache is not re-created for free — and the tax is measurable.** Each subagent
+   in a fan-out pays its own cache-write cost on first use; a single continuous session
+   sharing one context pays it once. In this session that overhead is visible directly in
+   the token counts, as cache-write tokens per unit of output produced:
+
+   | | cache-write | output | ratio |
+   |---|---|---|---|
+   | Orchestrator | 3,254,440 | 589,281 | **5.52** |
+   | Subagents | 10,065,478 | 761,581 | **13.22** |
+
+   **Delegated work paid 2.39× more cache-write per token of output than the orchestrator
+   did.** That is the re-priming tax of spawning separate contexts, quantified rather than
+   asserted. It cuts in the honest direction: the *actual* multi-agent spend already carries
+   overhead a single-agent run would not, so "just sum the tokens" overstates what a solo
+   session would have cost. It does not change the upper-bound status of the re-tiering
+   figure, but it does bound how much of that figure is real.
+
+   Reproduce it from any `--json` run: sum `cacheWrite` and `output` for the orchestrator
+   and subagent groups and divide.
 3. **No independent re-run.** The $170.37 figure was never actually executed. It is
    arithmetic on the same session's already-spent tokens, not a second measured run at
    the cheaper tiers.
