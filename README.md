@@ -226,7 +226,13 @@ npx skills add PapiScholz/symphony              # skills only
 ```
 
 The plugin route also installs the dispatch-logging hook (below); the skills-only route
-does not.
+does not. It needs `sh` on PATH — standard on macOS and Linux, and present on Windows
+through Git Bash.
+
+> **If you already configured that hook by hand in `settings.json`, remove your entry when
+> you install the plugin.** Plugin hooks *merge* with user hooks rather than replacing
+> them, so keeping both logs every dispatch twice. (0.1.0 shipped the hook scripts without
+> registering them at all — see the CHANGELOG.)
 
 ## What's in the repo
 

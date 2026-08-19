@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.1 — 2026-08-19
+
+### Fixed
+
+- **The plugin now actually installs the dispatch-logging hook.** 0.1.0's README claimed the plugin
+  route installed it; it did not. `plugin.json` declared no `hooks`, and the default location
+  (`hooks/hooks.json`) did not exist, so the plugin shipped the scripts without registering them.
+  Added `hooks/hooks.json` binding `PreToolUse` on `Agent|Task` to the POSIX hook via
+  `${CLAUDE_PLUGIN_ROOT}`. Verified with the exact command the plugin runs.
+
+  Note for anyone who also configured the hook by hand in `settings.json`: plugin hooks **merge**
+  with user hooks rather than replacing them, so running both logs every dispatch twice. Remove the
+  manual entry when installing the plugin.
+
 ## 0.1.0 — 2026-08-19
 
 First release. Two skills, the tooling to measure what orchestration actually consumes, and the
