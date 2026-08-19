@@ -402,8 +402,18 @@ to 130 tokens per skill, per `claude plugin details` — and the body loads when
 matches. Round 2's GREEN has the same gap.
 
 Closing it does not need a new harness. `claude plugin eval` runs cases against a plugin through
-the real loading path and adds a no-plugin baseline arm of its own. That is the instrument for the
-next round.
+the real loading path and adds a no-plugin baseline arm of its own (`--ablation with-without`),
+with graders marked `with-only` — including `tool_used: Skill` — acting as a plugin-*fired*
+indicator rather than part of the score. That is exactly the missing measurement, and it is the
+instrument for the next round.
+
+**It is not usable yet from here.** `claude plugin eval` is in early access, and on the authoring
+machine it exits with `plugin eval is currently in early access` — `init` included, so not even a
+case template can be generated. No eval suite is shipped in this repo, because a suite that has
+never been executed is not a test, and committing one would repeat the mistake this document
+exists to record. When access lands, the three round-3 scenarios port over directly: each becomes
+a case, `scaffold_script` replaces the harness's repo scaffolding, `--runs 3` matches the rep
+count, and the ablation arm replaces `--safe-mode` plus the contamination probe.
 
 ---
 
