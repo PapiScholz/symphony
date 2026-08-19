@@ -1,0 +1,9 @@
+# Line endings are not a style preference here: hooks/subagent-dispatch-log.sh is executed
+# by `sh`, and benchmark/scenarios/*.sh by `bash`. A CR in a shebang or at the end of a
+# command breaks both. Two of this repo's CI checks also assert that those files are
+# LF-only — with core.autocrlf=true (the Windows default) a fresh clone would check them
+# out as CRLF and those checks would fail on a contributor's machine but pass on the Linux
+# runner. A gate whose result depends on the operating system is not a gate.
+
+* text=auto
+*.sh text eol=lf

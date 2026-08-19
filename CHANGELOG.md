@@ -39,6 +39,9 @@
   Claude Code costs page — previously asserted without a citation in a repo whose whole argument is
   that it shows its numbers.
 - `CONTRIBUTING.md` said three planned skills had been cancelled; two had.
+- **`.gitattributes` pins `*.sh` to LF.** With `core.autocrlf=true` — the Windows default — a
+  fresh clone checked the shell scripts out as CRLF, which breaks `sh` on a shebang and would
+  have failed two CI checks on a contributor's machine while passing on the Linux runner.
 - `.gitignore` now covers `graphify-out/` and `benchmark/scenarios/out/`, which were only being
   excluded by a global ignore file on the author's machine.
 
