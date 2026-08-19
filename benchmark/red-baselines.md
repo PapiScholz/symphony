@@ -393,22 +393,49 @@ With three reps per arm this is not a proven mechanism, and it is not being sold
 hypothesis worth testing later is that a longer, more prescriptive skill competes for attention with
 the task in front of it.
 
-### A limitation both GREEN arms share
+### Does it fire? Measured separately — 6/6
 
-`--append-system-prompt-file` puts the skill's **body** into the system prompt. That tests whether
-the content changes behaviour, which is the question the method asks. It does **not** test whether
-the skill would fire on its own: in real use only the `description` is always resident — about 120
-to 130 tokens per skill, per `claude plugin details` — and the body loads when the description
-matches. Round 2's GREEN has the same gap.
+`--append-system-prompt-file` puts the skill's **body** into the system prompt. That tests
+whether the content changes behaviour once an agent reads it. It does not test whether an agent
+ever reaches for it: in real use only the `description` is resident — about 120 to 130 tokens per
+skill, per `claude plugin details` — and the body loads when that description matches. Round 2's
+GREEN has the same gap.
 
-Closing it properly needs a harness that drives the real loading path. `claude plugin eval` is
-that harness — it runs cases against an installed plugin and adds its own no-plugin arm — but it
-is gated behind a per-organisation early-access flag that a user cannot enable themselves, so it
-is not a route this project can rely on and no eval suite is shipped here.
+`claude plugin eval` would close it through the real loading path, but it is gated behind a
+per-organisation early-access flag a user cannot enable, so it is not a route this project can
+rely on and no eval suite is shipped here.
 
-The limitation therefore stands, and is stated rather than worked around: **the GREEN results in
-this document show that the guidance changes behaviour when an agent reads it. They do not show
-that the skill fires on its own.** Anyone reproducing them should read them that way.
+It was measured without it. `benchmark/scenarios/run-fires.sh` runs the same scenario in an
+**ordinary session** — no `--safe-mode`, the plugin installed at user scope, exactly what someone
+who ran `/plugin install` has — and reads the session's own `stream-json` events for a `Skill`
+tool_use.
+
+| Prompt variant | Skill fired unprompted | Fanned out |
+|---|---|---|
+| **paraphrase** — shares no wording with the description | **3/3** | 0/3 |
+| verbatim — uses the phrasing the description quotes | 3/3 | 0/3 |
+
+**Only the paraphrase row carries information.** The description says the skill applies *when a
+user asks to "throw this at a bunch of agents"* — a phrase written into it after the scenario
+existed. Firing on that is a text matching itself. The paraphrase variant asks for *"several
+workers handling different files at the same time"*, sharing nothing with the description, and it
+fired every time.
+
+**The detector was validated before its silence was trusted.** A prompt naming the skill outright
+must produce `{"skill":"symphony:when-not-to-orchestrate"}`; `firing-report.mjs` reports that
+control first and refuses to draw a conclusion if it is silent, because "no Skill events" and "this
+stream never reports Skill events" are otherwise indistinguishable.
+
+**What this does and does not establish.** It establishes that the skill triggers on unseen
+phrasing through the installed path. It does **not** isolate the behavioural effect: this is the
+real environment, so the other two Symphony skills and the author's own `CLAUDE.md` were loaded
+too, and the RED baseline already had 1/3 declining without any skill. Firing is what was measured
+here; the size of the effect is what the GREEN arms measure, under their own stated limits.
+
+One inconvenient data point, recorded rather than dropped: a single exploratory run before this
+series, using a thinner scaffold, did **not** fire. Six controlled runs since have, and no
+explanation for that one has been found. It is reported because n=1 against n=6 is how a false
+negative looks, and this document exists partly to catch those.
 
 ---
 

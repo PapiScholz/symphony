@@ -268,6 +268,12 @@ today's files reached only 1/3. A refactor aimed at exactly those two made the p
 *worse* and was reverted. Both arms, the scoring rule fixed before either was read, and what it
 does not do are in [`benchmark/red-baselines.md`](benchmark/red-baselines.md).
 
+**It does fire on its own.** Measured separately, in an ordinary session against the installed
+plugin rather than by pasting the skill into a prompt: it triggered in **3/3** runs on a request
+that shares no wording with its own description, and in 3/3 on the phrasing the description quotes
+— and in none of the six did the agent fan the work out. The detector was validated by making it
+fire on purpose before its silence was trusted.
+
 ### Three skills that were tested and deliberately not written
 
 `verifying-agent-output`, `writing-agent-specs` and a planned skill about the orchestrator's own
