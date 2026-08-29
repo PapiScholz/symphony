@@ -1,5 +1,10 @@
 # Local run data — never commit someone's telemetry
 subagent-runs.jsonl
+# Per-machine Claude Code state (settings.local.json carries local permissions).
+# Do not rely on a contributor's global gitignore for this: on the machine where
+# this line was added it was covered only by ~/.gitignore_global, which means a
+# fresh clone anywhere else showed it as untracked and ready to be committed.
+.claude/
 *.local.jsonl
 benchmark/runs/
 benchmark/scenarios/out/
