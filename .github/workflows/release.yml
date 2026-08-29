@@ -32,6 +32,24 @@ jobs:
       - name: Run the full check suite
         run: npm test
 
+      - name: Check the tag is annotated
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          TYPE=$(git cat-file -t "$TAG" 2>/dev/null || true)
+          if [ "$TYPE" = "commit" ]; then
+            echo "::error::Tag $TAG is lightweight."
+            echo "git push --follow-tags pushes annotated tags only. A lightweight tag stays on the"
+            echo "author's machine while the push reports success, so the release never runs and"
+            echo "nothing says why. Re-cut it: git tag -a -f $TAG && git push --force origin $TAG"
+            exit 1
+          fi
+          if [ "$TYPE" != "tag" ]; then
+            # Reaching here means the tag object was not fetched, not that the tag is fine.
+            echo "::warning::Could not determine whether $TAG is annotated (git cat-file returned '${TYPE:-nothing}'). Not recording that as a pass."
+          else
+            echo "Tag $TAG is annotated."
+          fi
+
       - name: Check the tag matches the manifests
         run: |
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
