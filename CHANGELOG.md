@@ -1,5 +1,64 @@
 # Changelog
 
+## 0.3.0 — 2026-08-29
+
+### Added
+
+- **`tools/outcome-backfill.mjs`** — derives the learning log's outcome half from the transcripts
+  instead of asking for it by hand. The dispatch half has been written automatically by the
+  `PreToolUse` hook since 0.1.0; the outcome half was specified as hand-written after a batch
+  returns, and the log says that never happened: **208 dispatches, 0 outcome entries**. It was not
+  forgetfulness — `tool_uses`, tokens and duration are already on disk. The tool joins a dispatch
+  row to the subagent's own transcript through the link documented as verified 34/34 in
+  `tools/transcript-schema.json` (a `user` line whose `toolUseResult` carries `agentId` and
+  `resolvedModel`, pointing at `subagents/agent-<agentId>.jsonl`), and appends what it measured.
+  It **never writes a verdict**, and never a `kind`: naming the work shape and calling a run
+  `ok`/`under`/`over` are the judgements the log exists to collect, and a machine-written verdict
+  would be exactly the unearned confidence it is meant to correct. Dispatches it cannot match — no
+  session id, no transcript left on disk — are counted and reported, never guessed. Dry run by
+  default; `--append` writes, `--json` for machines, `--log` for a non-default log location.
+- **A firing measurement for `when-not-to-orchestrate`, and the harness that produced it** —
+  `benchmark/scenarios/run-fires.sh` and `firing-report.mjs`. Every earlier arm used
+  `--append-system-prompt-file`, which proves a skill's body changes behaviour once read but not
+  that an agent ever reaches for it; in real use only the ~120-token `description` is resident.
+  This runs the same scenario in an **ordinary session** against the installed plugin and reads the
+  session's own `stream-json` for a `Skill` tool_use. It fired **3/3** on a paraphrase sharing no
+  wording with its description, 3/3 on the verbatim phrasing, and fanned out in none of the six.
+  Only the paraphrase row carries information — firing on the phrase the description itself quotes
+  is a text matching itself. The detector was validated by making it fire on purpose first:
+  `firing-report.mjs` reports that control before anything else and refuses a conclusion if it is
+  silent, because "no Skill events" and "this stream never reports Skill events" are otherwise
+  indistinguishable. One exploratory run before the series did not fire, and is recorded rather
+  than dropped.
+
+### Changed
+
+- **`learning-log.md` now points at the backfill** — the closing-the-loop section led with a JSONL
+  line to write by hand, in the one repo that had just shipped a tool to derive it. Hand-writing is
+  kept as the path for when the transcripts are gone, and the two example lines keep their warning
+  that they are format illustrations, not captured records.
+- **`README.md`'s repo tree was enumerating three of five things** — it listed one of the three
+  skills and neither `scripts/` nor `benchmark/`, and had no entry for the new tool. A doc that
+  enumerates goes stale the moment someone adds item N+1 and does not come back, and it reads as
+  complete because it is consistent with itself.
+- **`check-links.mjs` now covers `skills/*/references/*.md` too** — 12 files scanned instead of 6.
+  The reference files are most of the prose an agent actually loads at runtime, and every repo path
+  they cite was unchecked, including the one this release adds. They stay out of
+  `globSkillFiles()`, which feeds the frontmatter check, because reference files have no
+  frontmatter. Turning it on surfaced two references to `.claude/agents/` — the reader's project
+  directory, not this repo, the same class as the `~/.claude/...` paths the check already skipped —
+  so that class is now skipped explicitly rather than passing by accident. Proven red before it was
+  trusted: an inline path to a file that does not exist, added to a reference file, fails the check.
+
+### Fixed
+
+- **An empty learning-log query means unmeasured, not never mis-tiered.** Both documented greps
+  read the outcome half, so on a log whose loop was never closed they print nothing whether or not
+  anything was mis-tiered — a silence that reads like a clean bill of health.
+- **The plugin-eval promise was dropped, and the limitation it was meant to fix stated instead.**
+  `claude plugin eval` is gated behind a per-organisation early-access flag a user cannot enable,
+  so no eval suite is shipped that this project cannot run.
+
 ## 0.2.0 — 2026-08-19
 
 ### Added

@@ -295,10 +295,15 @@ The clean-room re-run, the retraction, and how to challenge any of it are in
 
 ```
 skills/orchestrating-subagents/   SKILL.md + 5 reference files (above)
-hooks/                            subagent-dispatch-log.sh, subagent-dispatch-log.ps1
+skills/measuring-orchestration-cost/  SKILL.md + what-to-report.md
+skills/when-not-to-orchestrate/   SKILL.md
+hooks/                            subagent-dispatch-log.sh, subagent-dispatch-log.ps1, hooks.json
 tools/cost-report.mjs             zero-dependency Node CLI: real token cost from transcripts
+tools/outcome-backfill.mjs        fills the learning log's outcome half from the transcripts
 tools/pricing.json                per-model $/MTok rates, dated and sourced
 tools/transcript-schema.json      the reverse-engineered transcript format this all reads
+scripts/                          the eight checks `npm test` and CI both run
+benchmark/                        red-baselines.md and the harness that produced it
 ```
 
 `hooks/subagent-dispatch-log.sh` and `.ps1` are a matched pair (POSIX shell and
@@ -313,6 +318,15 @@ retry is paid for in tokens, so the hook is written so no failure path can escap
 `tools/cost-report.mjs` reads a session's on-disk transcripts and produces the tables
 above (orchestrator vs. subagent, and subagent-by-model, in both tokens and dollars)
 directly — no other setup required. See "How to reproduce the numbers" below.
+
+`tools/outcome-backfill.mjs` closes the other half of the learning log. The hook writes
+what each dispatch *asked for*; the outcome — how many tool calls and tokens it actually
+took — was specified as hand-written after a batch returns, and measurement said that
+never happens: 208 dispatches, 0 outcome entries. It was not forgetfulness. Those numbers
+are already on disk in the subagent transcripts, so the tool joins them back to their
+dispatch rows and appends them. It leaves `kind` and `verdict` null on purpose: naming
+the work shape and calling a run under- or over-tiered are judgements, and a
+machine-written verdict is the unearned confidence the log exists to correct.
 
 ## When NOT to orchestrate
 

@@ -24,11 +24,12 @@ grep -i '"kind":"extract"' ~/.claude/subagent-runs.jsonl | tail -20
 grep -E '"verdict":"(under|over)"' ~/.claude/subagent-runs.jsonl | tail -20
 ```
 
-**An empty result is not an answer.** Both greps read the outcome half, which is hand-written
+**An empty result is not an answer.** Both greps read the outcome half, which is written only
 after a batch returns — a log that has never had the loop closed has none, so they print nothing
 whether or not mis-tiering happened. Zero lines means *unmeasured*, not *never mis-tiered*: fall
-back to the table in SKILL.md and close the loop below, or the next reader inherits the same false
-negative.
+back to the table in SKILL.md and close the loop below — `tools/outcome-backfill.mjs` recovers the
+measured half of every past dispatch that still has its transcripts — or the next reader inherits
+the same false negative.
 
 Two questions worth answering before writing the batch:
 
@@ -39,7 +40,21 @@ Two questions worth answering before writing the batch:
 
 ## Closing the loop after it returns
 
-Each completion reports `tool_uses`, `subagent_tokens`, `duration_ms`. Append the outcome half.
+Most of the outcome half is already on disk. `tools/outcome-backfill.mjs` joins each dispatch row
+to the subagent's own transcript and derives `tool_uses` and `tokens` from what actually ran:
+
+```bash
+node tools/outcome-backfill.mjs            # dry run: what it would append, and what it could not match
+node tools/outcome-backfill.mjs --append   # write those entries to the log
+```
+
+It leaves `kind` and `verdict` as `null` and never fills them in. `kind` is your label for the work
+shape, and a machine-written verdict would be exactly the unearned confidence this log exists to
+correct — read the rubric below and write those two yourself. Dispatches it cannot match (no
+session id, no transcript left on disk) are reported and left alone, never guessed.
+
+Where the transcripts are gone or unreachable, append the outcome half by hand: each completion
+reports `tool_uses`, `subagent_tokens`, `duration_ms`.
 
 The two lines below are **hand-written examples of the format, not captured records** — do not cite
 them as evidence of anything:

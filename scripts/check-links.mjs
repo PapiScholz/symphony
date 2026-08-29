@@ -21,13 +21,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { REPO_ROOT, Reporter, relRoot, walkFiles } from "./lib/repo.mjs";
-import { globSkillFiles } from "./lib/glob-skills.mjs";
+import { globSkillFiles, globSkillReferenceFiles } from "./lib/glob-skills.mjs";
 
 const TARGET_FILES = [
   path.join(REPO_ROOT, "README.md"),
   path.join(REPO_ROOT, "METHODOLOGY.md"),
   path.join(REPO_ROOT, "CONTRIBUTING.md"),
   ...globSkillFiles(),
+  ...globSkillReferenceFiles(),
 ].filter((f) => fs.existsSync(f));
 
 // path segment: word chars, dot, dash, underscore. Requires at least one '/'.
@@ -52,6 +53,11 @@ function looksLikeRepoPath(candidate) {
   if (candidate.startsWith("#")) return false;
   if (candidate.includes("://")) return false;
   if (candidate.startsWith("~")) return false;
+  // `.claude/...` is a location in the *reader's* project or home directory —
+  // where their agents, settings and logs live — not a path in this repo. It is
+  // the same class of reference as `~/.claude/...`, which the line above skips,
+  // and the docs write it both ways.
+  if (candidate === ".claude" || candidate.startsWith(".claude/")) return false;
   if (candidate.includes("<") || candidate.includes(">")) return false;
   if (candidate.includes(" ")) return false;
   // Glob patterns in prose ("hooks/subagent-dispatch-log.*", ".claude/agents/*.md")
