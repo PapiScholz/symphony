@@ -24,6 +24,12 @@ grep -i '"kind":"extract"' ~/.claude/subagent-runs.jsonl | tail -20
 grep -E '"verdict":"(under|over)"' ~/.claude/subagent-runs.jsonl | tail -20
 ```
 
+**An empty result is not an answer.** Both greps read the outcome half, which is hand-written
+after a batch returns — a log that has never had the loop closed has none, so they print nothing
+whether or not mis-tiering happened. Zero lines means *unmeasured*, not *never mis-tiered*: fall
+back to the table in SKILL.md and close the loop below, or the next reader inherits the same false
+negative.
+
 Two questions worth answering before writing the batch:
 
 1. **Has this shape of work run before?** If yes, start from the tier that came back `ok`, not from
