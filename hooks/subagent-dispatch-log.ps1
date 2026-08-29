@@ -39,7 +39,18 @@ try {
     }
 
     $line = ($entry | ConvertTo-Json -Compress -Depth 3)
-    $logPath = Join-Path $env:USERPROFILE '.claude\subagent-runs.jsonl'
+
+    # SYMPHONY_LOG redirige el log, igual que en subagent-dispatch-log.sh. Sin esto
+    # los dos scripts no son el par que el README dice que son, y el test de este
+    # archivo no tendria adonde escribir salvo el log real de quien corra la suite.
+    # $HOME cubre a pwsh en Linux/macOS, donde USERPROFILE no existe.
+    if ($env:SYMPHONY_LOG) {
+        $logPath = $env:SYMPHONY_LOG
+    }
+    else {
+        $home_ = if ($env:USERPROFILE) { $env:USERPROFILE } else { $HOME }
+        $logPath = Join-Path $home_ (Join-Path '.claude' 'subagent-runs.jsonl')
+    }
 
     # Rotación barata: si pasa ~4000 líneas, conservar la cola.
     if (Test-Path $logPath) {
