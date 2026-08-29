@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // check-links.mjs — internal-only link check.
 //
-// Scans README.md, METHODOLOGY.md, CONTRIBUTING.md and every skills/*/SKILL.md
+// Scans the repo's root-level prose docs (see TARGET_FILES below), every
+// skills/*/SKILL.md and every skills/*/references/*.md
 // for (a) markdown links [text](path) and (b) inline-code path references
 // (`some/repo/path.ext`) that look like a repo-relative path, and asserts each
 // one exists on disk. External URLs (http/https/mailto) are intentionally
@@ -27,6 +28,7 @@ const TARGET_FILES = [
   path.join(REPO_ROOT, "README.md"),
   path.join(REPO_ROOT, "METHODOLOGY.md"),
   path.join(REPO_ROOT, "CONTRIBUTING.md"),
+  path.join(REPO_ROOT, "SECURITY.md"),
   ...globSkillFiles(),
   ...globSkillReferenceFiles(),
 ].filter((f) => fs.existsSync(f));
@@ -58,6 +60,10 @@ function looksLikeRepoPath(candidate) {
   // the same class of reference as `~/.claude/...`, which the line above skips,
   // and the docs write it both ways.
   if (candidate === ".claude" || candidate.startsWith(".claude/")) return false;
+  // "$HOME/.claude/...", "${CLAUDE_PLUGIN_ROOT}/hooks/..." — a path resolved at
+  // runtime from the environment, on the reader's machine. Same class as the two
+  // above; only the spelling differs.
+  if (candidate.startsWith("$")) return false;
   if (candidate.includes("<") || candidate.includes(">")) return false;
   if (candidate.includes(" ")) return false;
   // Glob patterns in prose ("hooks/subagent-dispatch-log.*", ".claude/agents/*.md")
@@ -156,7 +162,7 @@ function looksLikeRepoPathOrAnchorOnly(target) {
 function main() {
   const reporter = new Reporter("internal-links");
   if (TARGET_FILES.length === 0) {
-    reporter.fail("no target files found (README.md / METHODOLOGY.md / CONTRIBUTING.md / skills/*/SKILL.md)");
+    reporter.fail("no target files found — TARGET_FILES resolved to nothing, which means the repo layout moved");
   }
   for (const f of TARGET_FILES) checkFile(f, reporter);
   reporter.note(`scanned ${TARGET_FILES.length} file(s): ${TARGET_FILES.map(relRoot).join(", ")}`);

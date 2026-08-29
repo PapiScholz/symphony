@@ -32,6 +32,11 @@ The plugin route also installs the dispatch-logging hook (below); the skills-onl
 does not. It needs `sh` on PATH — standard on macOS and Linux, and present on Windows
 through Git Bash.
 
+That hook then runs on every subagent dispatch, and the tools here read your session
+transcripts. [`SECURITY.md`](SECURITY.md) says exactly what each piece touches, what it
+never does, and gives the command that checks each claim — worth two minutes before you
+install something that runs unattended.
+
 > **If you already configured that hook by hand in `settings.json`, remove your entry when
 > you install the plugin.** Plugin hooks *merge* with user hooks rather than replacing
 > them, so keeping both logs every dispatch twice. (0.1.0 shipped the hook scripts without
@@ -294,7 +299,7 @@ The clean-room re-run, the retraction, and how to challenge any of it are in
 ## What's in the repo
 
 ```
-skills/orchestrating-subagents/   SKILL.md + 5 reference files (above)
+skills/orchestrating-subagents/   SKILL.md + the reference files listed above
 skills/measuring-orchestration-cost/  SKILL.md + what-to-report.md
 skills/when-not-to-orchestrate/   SKILL.md
 hooks/                            subagent-dispatch-log.sh, subagent-dispatch-log.ps1, hooks.json
@@ -302,12 +307,15 @@ tools/cost-report.mjs             zero-dependency Node CLI: real token cost from
 tools/outcome-backfill.mjs        fills the learning log's outcome half from the transcripts
 tools/pricing.json                per-model $/MTok rates, dated and sourced
 tools/transcript-schema.json      the reverse-engineered transcript format this all reads
-scripts/                          the eight checks `npm test` and CI both run
+scripts/                          the checks `npm test` and CI both run
 benchmark/                        red-baselines.md and the harness that produced it
 ```
 
 `hooks/subagent-dispatch-log.sh` and `.ps1` are a matched pair (POSIX shell and
 PowerShell) implementing the same `PreToolUse` observer for the `Agent`/`Task` tools.
+CI runs the same four stdin payloads through both and compares what each one logs, so
+that pairing is a checked property rather than an intention — they had already drifted
+once before anything checked it.
 Each run it logs, to a local JSONL file, which model and effort a dispatch actually
 requested — in particular, it records `model: INHERITED` when the call omitted the
 field, which is otherwise invisible in the transcript after the fact. It never blocks
