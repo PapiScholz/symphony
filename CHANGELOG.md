@@ -1,5 +1,55 @@
 # Changelog
 
+## 0.3.1 — 2026-08-29
+
+### Fixed
+
+- **The PowerShell hook now honours `SYMPHONY_LOG`, like the shell one always has.** The README
+  called the two scripts a matched pair implementing the same observer. They were not: the `.sh`
+  read `SYMPHONY_LOG` and the `.ps1` wrote to a fixed `$env:USERPROFILE\.claude\subagent-runs.jsonl`.
+  Nothing caught it because nothing ran the `.ps1` — it was found by hand, when a test of it
+  appended to the author's real log instead of the temp file it was given. The fallback also now
+  degrades to `$HOME`, so `pwsh` on Linux (the CI runner) resolves a real path instead of an empty
+  one. This is the change that makes the version a release rather than a docs bump.
+- **`.claude/` is ignored by the repository itself.** It was covered only by the author's global
+  gitignore, so `settings.local.json` — which carries local permissions — showed up as untracked
+  and committable in anyone else's clone.
+
+### Added
+
+- **`SECURITY.md`** — what runs on your machine and when (a `PreToolUse` hook on every dispatch,
+  two CLIs that read your transcripts, three skills loaded into an agent's context), each guarantee
+  paired with the command that checks it: no network or subprocess in the shipped code, zero
+  dependencies, one write and only under `--append`. It also states what the two tools print before
+  you paste output into an issue — `cost-report` emits aggregates plus paths, while
+  `outcome-backfill` emits dispatch descriptions, which are content from your session — and what is
+  out of scope, starting with "a skill failed to stop an agent", since these are measured guidance
+  and not a sandbox.
+- **Both halves of the hook are now checked.** `check-hook-syntax.mjs` parses the `.ps1` with
+  PowerShell's own parser, and `check-hook-behavior.mjs` runs the same four stdin payloads through
+  `sh` and `pwsh` and compares what each logs. The CRLF and BOM rules stay `.sh`-only, deliberately:
+  `.gitattributes` pins `eol=lf` there because `sh` executes it, while in Windows PowerShell 5.1 a
+  UTF-8 BOM is what makes an accented file decode correctly. Re-introducing the `SYMPHONY_LOG` bug
+  now fails the suite, which is how the check was verified.
+- **`check-readme-tree.mjs`** — the `What's in the repo` block is checked against disk: everything
+  listed exists, a directory whose children are enumerated has *all* of them listed, and every
+  top-level content directory is covered. That block went stale twice in one day. Each of the three
+  rules was proven red on purpose before being wired in. Hand-written counts came out of the block's
+  prose in the same change ("the eight checks", "5 reference files"): no path check can see a number
+  in a description, and the ninth check would have falsified the first one on arrival.
+- **A lightweight release tag now fails the release instead of vanishing.** `git push --follow-tags`
+  pushes annotated tags only, so a lightweight one stays on the author's machine while the push
+  reports success and the workflow never runs — which is exactly what happened to `v0.3.0` before it
+  was re-cut. `CONTRIBUTING.md` gained a `Cutting a release` section that says so, and the workflow
+  now refuses the tag. When it cannot tell (the tag object was not fetched) it warns rather than
+  recording a pass.
+
+### Changed
+
+- **`check-links.mjs` also scans `SECURITY.md`**, and skips `$HOME/...`-style paths — resolved from
+  the environment on the reader's machine, the same class as the `~/` and `.claude/` paths it
+  already skipped.
+
 ## 0.3.0 — 2026-08-29
 
 ### Added
