@@ -46,3 +46,6 @@ jobs:
 
       - name: Internal link check
         run: node scripts/check-links.mjs
+
+      - name: README repo tree matches disk
+        run: node scripts/check-readme-tree.mjs
