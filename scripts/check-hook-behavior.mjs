@@ -53,36 +53,35 @@ function tmpLogPath(label) {
 // overstates what was covered. Found by breaking the jq branch on a machine
 // without jq and watching the suite stay green.
 //
-// hideJq strips every PATH entry that contains a jq executable, forcing the
-// fallback. With jq absent to begin with, both passes exercise awk and the
-// reporter says the jq branch went unchecked rather than implying otherwise.
+// hideJq forces the fallback by putting a fake `jq` that always fails first on
+// PATH. The hook treats "jq ran and produced nothing" exactly like "no jq" and
+// drops to awk, so this exercises the real fallback path. It does NOT strip the
+// PATH directories that hold jq: on ubuntu-latest jq lives in /usr/bin next to
+// sh itself, and stripping it took sh with it (spawnSync sh ENOENT) — invisible
+// on a machine whose jq sits in its own directory. With jq absent to begin with,
+// both passes exercise awk and the reporter says the jq branch went unchecked.
 function jqOnPath() {
   const probe = spawnSync(process.platform === "win32" ? "where" : "which", ["jq"], { encoding: "utf8" });
   return !probe.error && probe.status === 0 && (probe.stdout || "").trim() !== "";
 }
 
-function pathWithoutJq() {
+let failingJqDir = null;
+function pathWithFailingJq() {
+  if (failingJqDir === null) {
+    failingJqDir = fs.mkdtempSync(path.join(os.tmpdir(), "symphony-nojq-"));
+    const shim = path.join(failingJqDir, "jq");
+    fs.writeFileSync(shim, "#!/bin/sh\nexit 1\n");
+    fs.chmodSync(shim, 0o755);
+  }
   const sep = process.platform === "win32" ? ";" : ":";
   const key = Object.keys(process.env).find((k) => k.toUpperCase() === "PATH") || "PATH";
-  const entries = (process.env[key] || "").split(sep);
-  const kept = entries.filter((dir) => {
-    if (!dir) return false;
-    for (const name of ["jq", "jq.exe"]) {
-      try {
-        if (fs.existsSync(path.join(dir, name))) return false;
-      } catch {
-        // unreadable dir: keep it, it cannot be providing jq to us either
-      }
-    }
-    return true;
-  });
-  return { key, value: kept.join(sep) };
+  return { key, value: failingJqDir + sep + (process.env[key] || "") };
 }
 
 function runHook(interp, stdinText, logPath, { hideJq = false } = {}) {
   const env = { ...process.env, SYMPHONY_LOG: logPath };
   if (hideJq) {
-    const { key, value } = pathWithoutJq();
+    const { key, value } = pathWithFailingJq();
     env[key] = value;
   }
   return spawnSync(interp.command, interp.args(interp.hookPath), {
@@ -447,6 +446,14 @@ function main() {
 
   if (ran.length > 0) {
     reporter.note(`ran ${CASES.length} stdin case(s) against ${ran.join(" and ")}`);
+  }
+
+  if (failingJqDir !== null) {
+    try {
+      fs.rmSync(failingJqDir, { recursive: true, force: true });
+    } catch {
+      // best-effort
+    }
   }
 
   const reminderHalves = checkReminderHook(reporter);
