@@ -23,7 +23,13 @@ There is no long-term support branch. If you are behind, update:
 **The hook.** `hooks/hooks.json` registers `hooks/subagent-dispatch-log.sh` as a `PreToolUse` hook
 matching `Agent|Task`. Installing the plugin means that script executes under `sh` before every
 subagent dispatch, for as long as it stays installed. It reads the hook payload on stdin and
-appends one JSON line to `~/.claude/subagent-runs.jsonl`.
+appends one JSON line to `~/.claude/subagent-runs.jsonl`. The line holds the dispatch's model,
+effort, type and description, plus the prompt's length (`promptBytes`) and whether it contains a
+stop marker (`stopHint`); the prompt text itself is never written.
+
+**The reminder.** `hooks.json` also registers `hooks/orchestration-reminder.sh` as a
+`SessionStart` hook. It reads nothing, writes no file, and prints one fixed line of context at the
+start of each session. `SYMPHONY_NO_REMINDER=1` turns it off.
 
 Two invariants hold it in place, and both are checked, not asserted — `node scripts/check-hook-behavior.mjs`
 runs the hook against real stdin payloads and fails if either breaks:
@@ -38,8 +44,8 @@ If logging fails, one line of telemetry is lost and nothing else happens.
 so the one that runs when you install the plugin — `SYMPHONY_LOG` overrides the log path; unset, it
 is `$HOME/.claude/subagent-runs.jsonl`. If something in your environment sets that variable, the
 hook appends there instead. That is by design for testing, and worth knowing if your environment is
-not entirely yours. The PowerShell script, which is only used if you wire it up yourself, ignores
-that variable and always writes to `%USERPROFILE%\.claude\subagent-runs.jsonl`.
+not entirely yours. The PowerShell script, which is only used if you wire it up yourself, honours
+the same variable since 0.3.1; unset, it writes to `%USERPROFILE%\.claude\subagent-runs.jsonl`.
 
 **The tools.** `tools/cost-report.mjs` reads `~/.claude/projects/**` — your session transcripts,
 which contain everything you and your agents said. `tools/outcome-backfill.mjs` reads the same

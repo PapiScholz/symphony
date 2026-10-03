@@ -302,7 +302,7 @@ The clean-room re-run, the retraction, and how to challenge any of it are in
 skills/orchestrating-subagents/   SKILL.md + the reference files listed above
 skills/measuring-orchestration-cost/  SKILL.md + what-to-report.md
 skills/when-not-to-orchestrate/   SKILL.md
-hooks/                            subagent-dispatch-log.sh, subagent-dispatch-log.ps1, hooks.json
+hooks/                            subagent-dispatch-log.{sh,ps1}, orchestration-reminder.{sh,ps1}, hooks.json
 tools/cost-report.mjs             zero-dependency Node CLI: real token cost from transcripts
 tools/outcome-backfill.mjs        fills the learning log's outcome half from the transcripts
 tools/pricing.json                per-model $/MTok rates, dated and sourced
@@ -322,6 +322,33 @@ field, which is otherwise invisible in the transcript after the fact. It never b
 the call and always exits 0: a `PreToolUse` hook that denies forces a retry, and that
 retry is paid for in tokens, so the hook is written so no failure path can escape that
 `exit 0`.
+
+It also records two fields about the mandate itself. `promptBytes` is the length of the
+subagent prompt in UTF-8 bytes — objective, and counted in bytes because that is the one
+unit the jq, awk and PowerShell parsers all compute identically. `stopHint` is a
+**heuristic**: whether the prompt contains one of a short, documented list of markers that
+tell the subagent where to stop ("report the first blocker and stop") rather than asking
+for an open-ended survey. The marker list and its limitations are in the hook, in plain
+sight, because a heuristic presented as a measurement is worse than no field at all. Do
+not report a `stopHint` count without saying it is a heuristic. `outcome-backfill.mjs`
+carries both fields into the outcome rows and reports the share of delegated tokens that
+went to dispatches with and without a marker, labelled as a heuristic in its output.
+
+`hooks/orchestration-reminder.sh` and `.ps1` are the other matched pair: a
+`SessionStart` hook that prints one line naming the skill to load before delegating,
+and asking for an explicit stop condition on every subagent prompt. It exists because
+the skills here only help when they are loaded, and the session where they matter most
+is the easiest one to skip them in. Set `SYMPHONY_NO_REMINDER=1` to silence it. Nothing
+here measures whether the reminder changes behaviour: it was added after one session that
+dispatched two open-ended subagents with all three skills installed and none invoked, and
+that session is a first-hand report with no published transcript, like the "three
+subagents were killed" incident above. Read the hook as cheap insurance, not as a result.
+
+That hook *does* write to stdout, which looks like it contradicts the rule above. It
+does not, and the difference is the event: on `PreToolUse` stdout is fed back to the
+model and a non-zero exit denies the call, while on `SessionStart` stdout is the
+documented channel for adding context and there is no call to deny. Both halves are
+checked to print identical ASCII, for the same reason the other pair is: they drift.
 
 `tools/cost-report.mjs` reads a session's on-disk transcripts and produces the tables
 above (orchestrator vs. subagent, and subagent-by-model, in both tokens and dollars)
@@ -398,6 +425,10 @@ breakdown directly, in both tokens and dollars — the token tables above and th
 tables in "If you pay per token" come straight out of it. The re-tiering table ($170.37
 / $54.68) is a manual step on top, not a flag; see `METHODOLOGY.md` for exactly what the
 tool automates and what it does not.
+
+## Listed in
+
+- [awesome-claude-skills](https://github.com/karanb192/awesome-claude-skills#collaboration--workflow) — `orchestrating-subagents`, under Collaboration & Workflow, since 2026-10-02 ([PR #227](https://github.com/karanb192/awesome-claude-skills/pull/227)).
 
 ## License
 

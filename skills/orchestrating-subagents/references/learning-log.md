@@ -66,7 +66,11 @@ them as evidence of anything:
 
 Fields: `kind` (your own short label for the work shape — reuse the same string for the same shape,
 that is what makes the log queryable), `model`, `effort`, `tool_uses`, `tokens`, `verdict`
-(`ok` | `under` | `over`), optional `note`.
+(`ok` | `under` | `over`), optional `note`. Rows filled by `outcome-backfill.mjs` also carry
+`promptBytes` and `stopHint` from the dispatch row, and the tool prints the share of delegated
+tokens that went to dispatches with and without a stop marker in the prompt. `stopHint` is a
+keyword heuristic about the shape of the mandate, not a measurement of whether the subagent
+stopped: quote that split only with the label.
 
 **Verdict rubric**, so the word means the same thing every time:
 

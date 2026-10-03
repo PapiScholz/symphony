@@ -139,6 +139,58 @@ function measureAgent(subagentsDir, agentId) {
   return { toolUses, tokens, modelSeen };
 }
 
+// Delegated tokens split by whether the dispatch prompt carried a stop marker.
+//
+// The hook writes `stopHint` and nothing read it; a count of unbounded dispatches
+// on its own says nothing, so the useful number is the cross: what share of the
+// delegated tokens went to dispatches without a marker. It covers every outcome
+// row with a token count -- earlier runs' and this one's -- because the split is
+// about the log, not about one invocation.
+//
+// stopHint is a HEURISTIC (a keyword match on the prompt, list in the hook) and
+// is reported as one, never as a measurement of whether a subagent stopped. Rows
+// logged before the field existed are their own bucket, not folded into "no".
+const STOP_HINT_NOTE =
+  "stopHint is a heuristic: a keyword match on the dispatch prompt (marker list in " +
+  "hooks/subagent-dispatch-log.sh). It describes the shape of the mandate, not whether " +
+  "the subagent actually stopped.";
+
+function stopHintSplit(outcomes) {
+  const bucket = () => ({ dispatches: 0, tokens: 0, tokenShare: null });
+  const out = { _note: STOP_HINT_NOTE, withMarker: bucket(), withoutMarker: bucket(), notRecorded: bucket() };
+  for (const o of outcomes) {
+    if (typeof o.tokens !== "number") continue;
+    const b = o.stopHint === true ? out.withMarker : o.stopHint === false ? out.withoutMarker : out.notRecorded;
+    b.dispatches++;
+    b.tokens += o.tokens;
+  }
+  const total = out.withMarker.tokens + out.withoutMarker.tokens + out.notRecorded.tokens;
+  for (const k of ["withMarker", "withoutMarker", "notRecorded"]) {
+    out[k].tokenShare = total > 0 ? Math.round((out[k].tokens / total) * 1000) / 1000 : null;
+  }
+  return out;
+}
+
+function printStopHintSplit(split) {
+  const rows = [
+    ["stop marker in prompt", split.withMarker],
+    ["no stop marker", split.withoutMarker],
+    ["not recorded (older rows)", split.notRecorded],
+  ];
+  if (rows.every(([, b]) => b.dispatches === 0)) return;
+  console.log("");
+  console.log("delegated tokens by stopHint -- a HEURISTIC, see below:");
+  console.log("  dispatches      tokens   share  prompt");
+  for (const [label, b] of rows) {
+    if (b.dispatches === 0) continue;
+    const share = b.tokenShare === null ? "-" : (b.tokenShare * 100).toFixed(1) + "%";
+    console.log(
+      "  " + String(b.dispatches).padStart(10) + String(b.tokens).padStart(12) + share.padStart(8) + "  " + label
+    );
+  }
+  console.log("  " + split._note);
+}
+
 function main() {
   const rows = readJsonl(LOG_PATH);
   if (rows.length === 0) {
@@ -189,11 +241,17 @@ function main() {
       tokens: m.tokens,
       verdict: null, // ok | under | over -- see the rubric, this stays a human call
       note: d.desc,
+      // Carried over from the dispatch row so the outcome row can be split by
+      // them later. Absent on rows logged before the hook recorded them.
+      promptBytes: d.promptBytes ?? null,
+      stopHint: typeof d.stopHint === "boolean" ? d.stopHint : null,
     });
   }
 
+  const split = stopHintSplit([...rows.filter((r) => "verdict" in r), ...filled]);
+
   if (AS_JSON) {
-    console.log(JSON.stringify({ filled, unmatched }, null, 2));
+    console.log(JSON.stringify({ filled, unmatched, stopHintSplit: split }, null, 2));
   } else {
     console.log("log:        " + LOG_PATH);
     console.log("dispatches: " + dispatches.length + " without an outcome");
@@ -225,6 +283,7 @@ function main() {
       for (const u of unmatched) why.set(u.why, (why.get(u.why) ?? 0) + 1);
       for (const [w, n] of why) console.log("  " + String(n).padStart(4) + "  " + w);
     }
+    printStopHintSplit(split);
   }
 
   if (!APPEND) {

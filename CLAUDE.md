@@ -35,6 +35,11 @@ the `.sh` hook's jq branch is skipped locally and only CI covers it);
     dispatch to `$SYMPHONY_LOG` (default `~/.claude/subagent-runs.jsonl`), recording
     `model: INHERITED` when the call omitted a model. It must **never block and never write to
     stdout**: always `exit 0`, because a denied `PreToolUse` forces a paid retry.
+    `promptBytes` is counted in UTF-8 bytes on purpose (the only unit jq, awk under `LC_ALL=C`
+    and PowerShell agree on); `stopHint` is a keyword heuristic (marker list in both halves) and
+    every consumer, starting with `outcome-backfill.mjs`, must label it as one.
+  - `orchestration-reminder` (`SessionStart`) prints one ASCII line on stdout, which is the
+    documented channel for that event; `SYMPHONY_NO_REMINDER=1` silences it.
 - **Tools** (`tools/`): `cost-report.mjs` prices transcripts against `pricing.json` (which carries
   `_retrieved` and `_sources`; update both when prices change). `outcome-backfill.mjs` joins
   subagent transcripts back to the hook's log rows, filling tool-call and token counts but leaving

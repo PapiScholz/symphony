@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.4.0 — 2026-10-03
+
+### Added
+
+- **`orchestration-reminder.{sh,ps1}`, a `SessionStart` hook.** It prints one line naming the skill
+  to load before delegating and asking for an explicit stop condition on every subagent prompt.
+  `SYMPHONY_NO_REMINDER=1` silences it. It writes to stdout, which the dispatch hook must never do;
+  the difference is the event, and both hook headers say why. Nothing measures whether the line
+  changes behaviour: it follows one first-hand incident with no published transcript, and the
+  README and the hook label it that way. The printed text makes no claim about tokens.
+- **Two fields in the dispatch log.** `promptBytes` is the prompt's length in UTF-8 bytes.
+  `stopHint` is a **heuristic** — whether the prompt contains one of a listed set of stop markers
+  ("report the first blocker and stop") — with the list and its limitations in plain sight in both
+  hook halves. The prompt text itself is never written.
+- **`outcome-backfill.mjs` reads them.** Outcome rows carry both fields, and the tool reports the
+  share of delegated tokens that went to dispatches with and without a marker, labelled as a
+  heuristic in its text and JSON output. Rows logged before the fields existed are a separate
+  bucket, never folded into "no marker".
+- **`check-outcome-backfill.mjs`** runs the backfill against a synthetic `~/.claude` and asserts
+  the split per bucket. The hook had recorded `stopHint` with nothing reading it; this is what
+  keeps the consumer from going dead again. Watched red on three injected faults.
+
+### Fixed
+
+- **The awk fallback wrote invalid JSONL for a description with a newline.** It emitted the
+  newline raw, splitting one row into two unparseable ones. Only machines without `jq` ran it.
+- **The PowerShell hook garbled non-ASCII.** It read stdin through the console code page, so on a
+  non-UTF-8 Windows console "é" was logged as two other characters. It now reads UTF-8 bytes.
+- **A prompt length that depended on the machine.** Counted in characters, the same Spanish prompt
+  gave 26 under jq and 29 under awk and PowerShell; an emoji gave 33 against 36. Bytes are the one
+  unit all three compute identically, hence `promptBytes`. PowerShell also lowercases ASCII only
+  now, matching jq and awk, so the halves cannot disagree on a marker.
+- **`SECURITY.md` said the PowerShell hook ignores `SYMPHONY_LOG`.** That stopped being true in
+  0.3.1. It now also documents the reminder hook and the new log fields.
+
+### Changed
+
+- **`check-hook-behavior.mjs` covers non-ASCII and escapes.** A fifth payload carries a newline,
+  quotes, backslashes, accents and an emoji; each valid payload must produce exactly one line. All
+  seven faults injected across the jq, awk and PowerShell branches turned it red. One limit: the
+  console-decoding fault only shows on a non-UTF-8 console, so CI's Linux runner cannot catch it.
+- **CI installs `jq` explicitly** when the runner lacks it, instead of relying on the image. The
+  hook check fails in CI without it by design, since the jq branch would otherwise go unchecked.
+- **The hook comments are in English**, per `CONTRIBUTING.md`. The Spanish stop markers stay: they
+  are matched against prompts, not prose.
+- **`CLAUDE.md`** for agents working in this repo, and a "Listed in" section in the README.
+
 ## 0.3.1 — 2026-08-29
 
 ### Fixed

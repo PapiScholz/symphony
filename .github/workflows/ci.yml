@@ -23,6 +23,16 @@ jobs:
         with:
           node-version: "20"
 
+      # check-hook-behavior.mjs FAILS in CI without jq, by design: without it the
+      # jq branch of subagent-dispatch-log.sh never runs and the check could not
+      # claim to have covered it. ubuntu-latest ships jq today, but that is the
+      # runner image's choice, not this repo's; this step makes it a declared
+      # dependency. It is a no-op when jq is already there.
+      - name: Ensure jq (both parsers of the sh hook must run)
+        run: |
+          command -v jq >/dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y jq; }
+          jq --version
+
       - name: Skill frontmatter validity
         run: node scripts/check-skill-frontmatter.mjs
 
@@ -37,6 +47,9 @@ jobs:
 
       - name: Hook behavior (never blocks, never writes stdout)
         run: node scripts/check-hook-behavior.mjs
+
+      - name: Outcome backfill (stopHint split has a consumer)
+        run: node scripts/check-outcome-backfill.mjs
 
       - name: Pricing sanity
         run: node scripts/check-pricing.mjs
